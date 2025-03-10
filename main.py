@@ -11,8 +11,135 @@ and summary statistics.
 import argparse
 import os
 import sys
+import logging
+import pandas as pd
+import numpy as np
 from pathlib import Path
+from typing import Tuple, Optional, Union, Dict, Any
+from datetime import datetime
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+class DataValidationError(Exception):
+    """Custom exception for data validation errors."""
+    pass
+
+def process_csv(file_path: Union[str, Path], error_log: Optional[Dict[str, Any]] = None) -> Optional[pd.DataFrame]:
+    """
+    Process and validate a CSV file containing behavioral annotation data.
+    
+    This function performs several validation checks:
+    1. Checks if the 'Frame' column exists in the CSV
+    2. Ensures all frame entries can be converted to integers
+    3. Verifies there's an even number of entries (alternating start/stop frames)
+    4. Confirms frames are in strictly increasing order
+    
+    Args:
+        file_path: Path to the CSV file to process
+        error_log: Optional dictionary to store error information for batch processing
+        
+    Returns:
+        DataFrame containing valid frame data if all checks pass, None otherwise
+        
+    Raises:
+        DataValidationError: If any validation check fails and error_log is not provided
+    """
+    file_path = Path(file_path)
+    filename = file_path.name
+    
+    try:
+        # Read the CSV file
+        logger.info(f"Reading file: {filename}")
+        df = pd.read_csv(file_path)
+        
+        # Check if 'Frame' column exists
+        if 'Frame' not in df.columns:
+            error_msg = f"File {filename} is missing the 'Frame' column"
+            if error_log is not None:
+                error_log.update({
+                    'filename': filename,
+                    'error_type': 'Missing Column',
+                    'details': error_msg,
+                    'frame': None
+                })
+                logger.error(error_msg)
+                return None
+            else:
+                raise DataValidationError(error_msg)
+        
+        # Extract the Frame column
+        frames = df['Frame']
+        
+        # Check if all values can be converted to integers
+        try:
+            frames = frames.astype(int)
+        except ValueError:
+            error_msg = f"File {filename} contains non-numeric values in the 'Frame' column"
+            if error_log is not None:
+                error_log.update({
+                    'filename': filename,
+                    'error_type': 'Non-numeric Values',
+                    'details': error_msg,
+                    'frame': None
+                })
+                logger.error(error_msg)
+                return None
+            else:
+                raise DataValidationError(error_msg)
+        
+        # Check if number of entries is even
+        if len(frames) % 2 != 0:
+            error_msg = f"File {filename} contains an odd number of frame entries ({len(frames)})"
+            if error_log is not None:
+                error_log.update({
+                    'filename': filename,
+                    'error_type': 'Odd Entry Count',
+                    'details': error_msg,
+                    'frame': None
+                })
+                logger.error(error_msg)
+                return None
+            else:
+                raise DataValidationError(error_msg)
+        
+        # Check if frames are in strictly increasing order
+        for i in range(1, len(frames)):
+            if frames.iloc[i] <= frames.iloc[i-1]:
+                error_msg = f"File {filename} contains non-increasing frame numbers at position {i}"
+                problematic_frame = frames.iloc[i]
+                if error_log is not None:
+                    error_log.update({
+                        'filename': filename,
+                        'error_type': 'Non-increasing Frames',
+                        'details': error_msg,
+                        'frame': problematic_frame
+                    })
+                    logger.error(error_msg)
+                    return None
+                else:
+                    raise DataValidationError(f"{error_msg} (frame: {problematic_frame})")
+        
+        # If all checks pass, return the extracted frames as a DataFrame
+        logger.info(f"File {filename} validated successfully with {len(frames)} frame entries")
+        return pd.DataFrame({'Frame': frames})
+    
+    except Exception as e:
+        # Catch any other exceptions (file not found, permission issues, etc.)
+        error_msg = f"Error processing file {filename}: {str(e)}"
+        if error_log is not None:
+            error_log.update({
+                'filename': filename,
+                'error_type': 'Processing Error',
+                'details': error_msg,
+                'frame': None
+            })
+            logger.error(error_msg)
+            return None
+        else:
+            raise DataValidationError(error_msg) from e
 
 def parse_arguments():
     """
@@ -102,8 +229,7 @@ def main():
     print(f"Output: {args.output}")
     print(f"Total frames: {args.total_frames}")
     
-    # Placeholder for future processing logic
-    # TODO: Implement file processing, event pairing, timeline creation, etc.
+    # TODO: Implement the rest of the processing pipeline
     
     print("Processing complete.")
 
