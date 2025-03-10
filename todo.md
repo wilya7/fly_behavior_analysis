@@ -40,21 +40,21 @@ This checklist outlines all the tasks required to complete the project. Each ite
 ---
 
 ## 3. Input CSV Processing & Validation
-- [ ] **CSV File Reading**
-  - [ ] Implement a function to read the CSV file using Pandas.
-- [ ] **Frame Column Extraction**
-  - [ ] Validate the presence of the `Frame` column.
-  - [ ] Convert `Frame` values to integers.
-- [ ] **Data Validation**
-  - [ ] Check that the number of frame entries is even.
-  - [ ] Verify that frame numbers are strictly increasing.
-  - [ ] Handle errors (missing column, odd count, non-increasing order) appropriately:
+- [x] **CSV File Reading**
+  - [x] Implement a function to read the CSV file using Pandas.
+- [x] **Frame Column Extraction**
+  - [x] Validate the presence of the `Frame` column.
+  - [x] Convert `Frame` values to integers.
+- [x] **Data Validation**
+  - [x] Check that the number of frame entries is even.
+  - [x] Verify that frame numbers are strictly increasing.
+  - [x] Handle errors (missing column, odd count, non-increasing order) appropriately:
     - Log errors or raise exceptions as needed.
-- [ ] **Unit Tests for CSV Processing**
-  - [ ] Write tests for valid input CSV.
-  - [ ] Write tests for CSV with missing `Frame` column.
-  - [ ] Write tests for odd number of entries.
-  - [ ] Write tests for non-increasing frame values.
+- [x] **Unit Tests for CSV Processing**
+  - [x] Write tests for valid input CSV.
+  - [x] Write tests for CSV with missing `Frame` column.
+  - [x] Write tests for odd number of entries.
+  - [x] Write tests for non-increasing frame values.
 
 ---
 
