@@ -52,7 +52,7 @@ def no_frame_column_csv():
         })
         df.to_csv(temp.name, index=False)
         yield temp.name
-    os.unlink(temp.name)
+        os.unlink(temp.name)
 
 @pytest.fixture
 def non_numeric_frame_csv():
@@ -64,7 +64,7 @@ def non_numeric_frame_csv():
         })
         df.to_csv(temp.name, index=False)
         yield temp.name
-    os.unlink(temp.name)
+        os.unlink(temp.name)
 
 @pytest.fixture
 def odd_entries_csv():
@@ -76,7 +76,7 @@ def odd_entries_csv():
         })
         df.to_csv(temp.name, index=False)
         yield temp.name
-    os.unlink(temp.name)
+        os.unlink(temp.name)
 
 @pytest.fixture
 def non_increasing_frames_csv():
