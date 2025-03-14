@@ -202,6 +202,108 @@ def validate_args(args):
         
     return True
 
+def generate_timeline(frames: pd.Series, total_frames: int) -> pd.DataFrame:
+    """
+    Generate a timeline table from the extracted frame numbers.
+    
+    This function:
+    1. Pairs frame numbers as alternating start and stop values
+    2. Validates each pair (start <= stop)
+    3. Creates a DataFrame with rows for frames 1 to N
+    4. For each valid event pair, updates the corresponding rows in the DataFrame
+    
+    Args:
+        frames: Series of frame numbers (assumed to be validated and even in count)
+        total_frames: Total number of frames to consider (N)
+        
+    Returns:
+        DataFrame containing the timeline with columns: Frame, GroomingFlag, EventID
+        
+    Raises:
+        ValueError: If any pair is invalid (start > stop)
+    """
+    # Create a timeline DataFrame with frames 1 to N
+    timeline = pd.DataFrame({
+        'Frame': range(1, total_frames + 1),
+        'GroomingFlag': 0,
+        'EventID': 0
+    })
+    
+    # Convert frames to numpy array if it's a pandas Series
+    frame_values = frames.values if isinstance(frames, pd.Series) else np.array(frames)
+    
+    # Ensure we have an even number of frames (should be pre-validated)
+    if len(frame_values) % 2 != 0:
+        raise ValueError("Expected an even number of frame entries for pairing")
+    
+    # Create pairs of start and stop frames
+    pairs = [(frame_values[i], frame_values[i+1]) for i in range(0, len(frame_values), 2)]
+    
+    # Update timeline for each valid pair
+    for event_id, (start, stop) in enumerate(pairs, 1):
+        # Validate that start <= stop
+        if start > stop:
+            raise ValueError(f"Invalid frame pair at index {event_id-1}: start ({start}) > stop ({stop})")
+        
+        # Ensure frames are within the valid range
+        if start < 1:
+            logger.warning(f"Event {event_id} has start frame ({start}) less than 1. Adjusted to 1.")
+            start = 1
+            
+        if stop > total_frames:
+            logger.warning(f"Event {event_id} has stop frame ({stop}) greater than {total_frames}. Adjusted to {total_frames}.")
+            stop = total_frames
+        
+        # Update the timeline for this event
+        mask = (timeline['Frame'] >= start) & (timeline['Frame'] <= stop)
+        timeline.loc[mask, 'GroomingFlag'] = 1
+        timeline.loc[mask, 'EventID'] = event_id
+    
+    return timeline
+
+def generate_event_list(frames: pd.Series) -> pd.DataFrame:
+    """
+    Generate an event list from frame data, pairing them as alternating start and stop values.
+    
+    This function takes the frame numbers extracted from the CSV file and creates a DataFrame
+    listing all events with their start and stop frames. Each event is assigned a unique ID
+    that corresponds to the EventID used in the timeline.
+    
+    Args:
+        frames: Series of frame numbers (assumed to be validated and even in count)
+        
+    Returns:
+        DataFrame containing event list with columns: EventID, StartFrame, StopFrame
+        
+    Raises:
+        ValueError: If any pair is invalid (start > stop) or if the input has an odd number of entries
+    """
+    # Convert frames to numpy array if it's a pandas Series
+    frame_values = frames.values if isinstance(frames, pd.Series) else np.array(frames)
+    
+    # Ensure we have an even number of frames
+    if len(frame_values) % 2 != 0:
+        raise ValueError("Expected an even number of frame entries for pairing")
+    
+    # Create pairs of start and stop frames
+    events = []
+    for i in range(0, len(frame_values), 2):
+        start = frame_values[i]
+        stop = frame_values[i+1]
+        
+        # Validate that start <= stop
+        if start > stop:
+            raise ValueError(f"Invalid frame pair at index {i//2}: start ({start}) > stop ({stop})")
+        
+        # Add the event to our list
+        events.append({
+            'EventID': i//2 + 1,  # Start EventIDs from 1
+            'StartFrame': start,
+            'StopFrame': stop
+        })
+    
+    # Create and return the DataFrame
+    return pd.DataFrame(events)
 
 def main():
     """
