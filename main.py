@@ -401,6 +401,195 @@ def save_summary_report(summary_report: Dict[str, Any], output_dir: Path, total_
     summary_df.to_csv(summary_file, index=False)
     logger.info(f"Saved consolidated summary report to {summary_file}")
     
+def generate_timeline_plot(timeline_df: pd.DataFrame, output_path: Path) -> None:
+    """
+    Generate a timeline plot visualizing grooming events from the timeline DataFrame.
+    
+    This function creates a horizontal timeline visualization where grooming events
+    are color-coded according to their EventID. The x-axis represents frame numbers,
+    and colored segments indicate frames where grooming occurs.
+    
+    Args:
+        timeline_df: DataFrame containing timeline data with columns:
+            - Frame: Frame number
+            - GroomingFlag: Binary indicator (0 = no grooming, 1 = grooming)
+            - EventID: Identifier for each grooming event
+        output_path: Path where the PNG image will be saved
+        
+    Returns:
+        None. The plot is saved to the specified output path.
+        
+    Raises:
+        ValueError: If the input DataFrame is empty or doesn't have required columns
+    """
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+    from matplotlib.collections import LineCollection
+    import numpy as np
+    
+    # Check if DataFrame is valid
+    if timeline_df is None or timeline_df.empty:
+        raise ValueError("Timeline DataFrame is empty or None")
+    
+    required_columns = ['Frame', 'GroomingFlag', 'EventID']
+    if not all(col in timeline_df.columns for col in required_columns):
+        raise ValueError(f"Timeline DataFrame must contain all required columns: {required_columns}")
+    
+    # Create a new figure with appropriate size
+    plt.figure(figsize=(12, 3))
+    
+    # Get unique event IDs (excluding 0, which means no grooming)
+    event_ids = sorted(timeline_df[timeline_df['EventID'] > 0]['EventID'].unique())
+    
+    # Create a colormap for different events (excluding black, which we'll use for non-grooming)
+    num_events = len(event_ids)
+    if num_events > 0:
+        # Choose a colormap that works well for the number of events
+        # Avoid colors that are too light to see
+        colormap = plt.get_cmap('tab10', num_events)
+        colors = [colormap(i) for i in range(num_events)]
+    else:
+        colors = []
+    
+    # Map event IDs to colors
+    event_colors = {event_id: colors[i] for i, event_id in enumerate(event_ids)}
+    
+    # Create segments for each grooming event
+    segments = []
+    colors_list = []
+    
+    # Map event IDs in the timeline to colors
+    for event_id in event_ids:
+        # Get frames for this event
+        event_frames = timeline_df[timeline_df['EventID'] == event_id]['Frame'].values
+        
+        if len(event_frames) > 0:
+            # Determine start and end frames for continuous blocks
+            diffs = np.diff(event_frames)
+            break_points = np.where(diffs > 1)[0]
+            
+            # Extract continuous segments
+            start_idx = 0
+            for end_idx in np.append(break_points, len(event_frames) - 1):
+                segment_start = event_frames[start_idx]
+                segment_end = event_frames[end_idx]
+                
+                # Add segment as a line
+                segments.append([(segment_start, 1), (segment_end, 1)])
+                colors_list.append(event_colors[event_id])
+                
+                start_idx = end_idx + 1
+    
+    # Create the line collection for the timeline
+    if segments:
+        lc = LineCollection(segments, colors=colors_list, linewidths=10)
+        plt.gca().add_collection(lc)
+    
+    # Set the axes limits and labels
+    plt.xlim(timeline_df['Frame'].min(), timeline_df['Frame'].max())
+    plt.ylim(0.5, 1.5)
+    plt.yticks([])  # Hide y-axis ticks as they're not meaningful
+    plt.xlabel('Frame Number')
+    plt.title('Grooming Timeline')
+    
+    # Add a grid to make it easier to identify frame ranges
+    plt.grid(axis='x', alpha=0.3)
+    
+    # Create a legend for event IDs
+    if event_ids:
+        legend_elements = [plt.Line2D([0], [0], color=event_colors[event_id], lw=4, 
+                                     label=f'Event {event_id}') 
+                          for event_id in event_ids]
+        plt.legend(handles=legend_elements, loc='upper center', 
+                  bbox_to_anchor=(0.5, -0.15), ncol=min(5, len(event_ids)))
+    
+    # Adjust layout to make room for the legend
+    plt.tight_layout()
+    
+    # Save the figure to the specified output path
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    logger.info(f"Saved timeline plot to {output_path}")
+
+
+def generate_box_plot(event_list_df: pd.DataFrame, output_path: Path) -> None:
+    """
+    Generate a box plot showing the distribution of grooming event durations.
+    
+    This function calculates the duration of each grooming event (StopFrame - StartFrame + 1)
+    and creates a box plot to visualize the distribution of these durations.
+    
+    Args:
+        event_list_df: DataFrame containing event data with columns:
+            - EventID: Identifier for each grooming event
+            - StartFrame: Frame where the event begins
+            - StopFrame: Frame where the event ends
+        output_path: Path where the PNG image will be saved
+        
+    Returns:
+        None. The plot is saved to the specified output path.
+        
+    Raises:
+        ValueError: If the input DataFrame is empty or doesn't have required columns
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    # Check if DataFrame is valid
+    if event_list_df is None or event_list_df.empty:
+        raise ValueError("Event list DataFrame is empty or None")
+    
+    required_columns = ['EventID', 'StartFrame', 'StopFrame']
+    if not all(col in event_list_df.columns for col in required_columns):
+        raise ValueError(f"Event list DataFrame must contain all required columns: {required_columns}")
+    
+    # Calculate durations for each event
+    durations = event_list_df['StopFrame'] - event_list_df['StartFrame'] + 1
+    
+    # Create a new figure
+    plt.figure(figsize=(8, 6))
+    
+    # Create the box plot
+    box = plt.boxplot(durations, patch_artist=True)
+    
+    # Customize box plot appearance
+    for patch in box['boxes']:
+        patch.set_facecolor('lightblue')
+    
+    # Add individual points to show the raw data distribution
+    plt.scatter(np.ones(len(durations)), durations, 
+               alpha=0.6, color='darkblue', s=30, zorder=3)
+    
+    # Add labels and title
+    plt.ylabel('Duration (frames)')
+    plt.title('Distribution of Grooming Event Durations')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    
+    # Remove x-axis ticks since we only have one category
+    plt.xticks([])
+    
+    # Add basic statistics as text
+    if len(durations) > 0:
+        stats_text = (
+            f"n = {len(durations)}\n"
+            f"Mean = {durations.mean():.1f}\n"
+            f"Median = {durations.median():.1f}\n"
+            f"Min = {durations.min():.0f}\n"
+            f"Max = {durations.max():.0f}"
+        )
+        plt.text(1.3, durations.median(), stats_text, 
+                va='center', ha='left', bbox=dict(facecolor='white', alpha=0.8))
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Save the figure to the specified output path
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    
+    logger.info(f"Saved box plot to {output_path}")
+
 def main():
     """
     Main function that orchestrates the data processing pipeline.
