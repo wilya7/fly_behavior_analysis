@@ -88,7 +88,22 @@ def non_increasing_frames_csv():
         })
         df.to_csv(temp.name, index=False)
         yield temp.name
-    os.unlink(temp.name)
+        os.unlink(temp.name)
+
+@pytest.fixture
+def sample_frames():
+    """Create sample frame data for timeline generation tests."""
+    return pd.Series([100, 200, 300, 400])  # Two events: (100-200) and (300-400)
+
+@pytest.fixture
+def invalid_frame_pair():
+    """Create sample frame data with an invalid pair (start > stop)."""
+    return pd.Series([200, 100, 300, 400])  # First pair is invalid: 200 > 100
+
+@pytest.fixture
+def out_of_range_frames():
+    """Create sample frame data with frames outside the valid range."""
+    return pd.Series([0, 50, 480, 600])  # One event starts before 1, one ends after total_frames=500
 
 def test_valid_csv(valid_csv):
     """Test processing of a valid CSV file."""
@@ -104,7 +119,6 @@ def test_missing_frame_column(no_frame_column_csv):
     result = process_csv(no_frame_column_csv, error_log)
     assert result is None
     assert error_log['error_type'] == 'Missing Column'
-    
     # Test without error_log (should raise exception)
     with pytest.raises(DataValidationError):
         process_csv(no_frame_column_csv)
@@ -115,7 +129,6 @@ def test_non_numeric_frame(non_numeric_frame_csv):
     result = process_csv(non_numeric_frame_csv, error_log)
     assert result is None
     assert error_log['error_type'] == 'Non-numeric Values'
-    
     # Test without error_log (should raise exception)
     with pytest.raises(DataValidationError):
         process_csv(non_numeric_frame_csv)
@@ -126,7 +139,6 @@ def test_odd_entries(odd_entries_csv):
     result = process_csv(odd_entries_csv, error_log)
     assert result is None
     assert error_log['error_type'] == 'Odd Entry Count'
-    
     # Test without error_log (should raise exception)
     with pytest.raises(DataValidationError):
         process_csv(odd_entries_csv)
