@@ -150,7 +150,88 @@ def test_non_increasing_frames(non_increasing_frames_csv):
     assert result is None
     assert error_log['error_type'] == 'Non-increasing Frames'
     assert error_log['frame'] == 140  # The problematic frame
-    
     # Test without error_log (should raise exception)
     with pytest.raises(DataValidationError):
         process_csv(non_increasing_frames_csv)
+
+def test_generate_timeline_basic(sample_frames):
+    """Test basic functionality of generate_timeline with valid input."""
+    total_frames = 500
+    timeline = generate_timeline(sample_frames, total_frames)
+    
+    # Verify timeline has correct shape and columns
+    assert len(timeline) == total_frames
+    assert all(col in timeline.columns for col in ['Frame', 'GroomingFlag', 'EventID'])
+    
+    # Verify frames 1-99 have no grooming
+    assert all(timeline.loc[0:98, 'GroomingFlag'] == 0)
+    assert all(timeline.loc[0:98, 'EventID'] == 0)
+    
+    # Verify frames 100-200 have grooming with EventID 1
+    assert all(timeline.loc[99:199, 'GroomingFlag'] == 1)
+    assert all(timeline.loc[99:199, 'EventID'] == 1)
+    
+    # Verify frames 201-299 have no grooming
+    assert all(timeline.loc[200:298, 'GroomingFlag'] == 0)
+    assert all(timeline.loc[200:298, 'EventID'] == 0)
+    
+    # Verify frames 300-400 have grooming with EventID 2
+    assert all(timeline.loc[299:399, 'GroomingFlag'] == 1)
+    assert all(timeline.loc[299:399, 'EventID'] == 2)
+    
+    # Verify frames 401-500 have no grooming
+    assert all(timeline.loc[400:499, 'GroomingFlag'] == 0)
+    assert all(timeline.loc[400:499, 'EventID'] == 0)
+
+def test_generate_timeline_invalid_pair(invalid_frame_pair):
+    """Test generate_timeline with invalid frame pair (start > stop)."""
+    total_frames = 500
+    
+    # Should raise ValueError for invalid pair
+    with pytest.raises(ValueError) as excinfo:
+        generate_timeline(invalid_frame_pair, total_frames)
+    
+    # Check that the error message mentions the invalid pair
+    assert "start (200) > stop (100)" in str(excinfo.value)
+
+def test_generate_timeline_out_of_range(out_of_range_frames):
+    """Test generate_timeline with frames outside the valid range."""
+    total_frames = 500
+    
+    # The function should adjust the ranges to be within bounds
+    # but we need to capture warnings to verify they're logged properly
+    timeline = generate_timeline(out_of_range_frames, total_frames)
+    
+    # First event should be adjusted to start at frame 1 instead of 0
+    assert timeline.loc[0, 'GroomingFlag'] == 1
+    assert timeline.loc[0, 'EventID'] == 1
+    
+    # Second event should be truncated to end at frame 500 instead of 600
+    assert timeline.loc[479, 'GroomingFlag'] == 1  # Frame 480
+    assert timeline.loc[479, 'EventID'] == 2
+    assert timeline.loc[499, 'GroomingFlag'] == 1  # Frame 500
+    assert timeline.loc[499, 'EventID'] == 2
+
+def test_timeline_from_csv_file(valid_csv):
+    """Test end-to-end processing from CSV file to timeline generation."""
+    total_frames = 500
+    
+    # Process the CSV file
+    frames_df = process_csv(valid_csv)
+    assert frames_df is not None
+    
+    # Generate timeline from the processed frames
+    timeline = generate_timeline(frames_df['Frame'], total_frames)
+    
+    # Verify the timeline has expected structure
+    assert len(timeline) == total_frames
+    assert all(col in timeline.columns for col in ['Frame', 'GroomingFlag', 'EventID'])
+    
+    # Verify events are correctly marked in the timeline
+    # First event: frames 100-150
+    assert all(timeline.loc[99:149, 'GroomingFlag'] == 1)
+    assert all(timeline.loc[99:149, 'EventID'] == 1)
+    
+    # Second event: frames 200-250
+    assert all(timeline.loc[199:249, 'GroomingFlag'] == 1)
+    assert all(timeline.loc[199:249, 'EventID'] == 2)
