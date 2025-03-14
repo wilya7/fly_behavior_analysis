@@ -15,7 +15,7 @@ import logging
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Tuple, Optional, Union, Dict, Any
+from typing import Tuple, Optional, Union, Dict, Any, List
 from datetime import datetime
 
 # Configure logging
