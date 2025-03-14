@@ -59,113 +59,109 @@ This checklist outlines all the tasks required to complete the project. Each ite
 ---
 
 ## 4. Event Pairing & Timeline Table Generation
-- [ ] **Event Pairing Function**
-  - [ ] Implement pairing of frame values as alternating start and stop events.
-  - [ ] Validate each pair: start frame ≤ stop frame.
-- [ ] **Timeline Table Creation**
-  - [ ] Create a Pandas DataFrame for frames 1 to N.
-  - [ ] Initialize columns:
+- [x] **Event Pairing Function**
+  - [x] Implement pairing of frame values as alternating start and stop events.
+  - [x] Validate each pair: start frame ≤ stop frame.
+- [x] **Timeline Table Creation**
+  - [x] Create a Pandas DataFrame for frames 1 to N.
+  - [x] Initialize columns:
     - `Frame`
     - `GroomingFlag` (default 0)
     - `EventID` (default 0)
-  - [ ] For each event pair:
-    - [ ] Update rows from start to stop with `GroomingFlag = 1`.
-    - [ ] Assign a unique positive `EventID` for each event.
-- [ ] **Unit Tests for Timeline Generation**
-  - [ ] Verify timeline DataFrame correctness given sample input frames.
+  - [x] For each event pair:
+    - [x] Update rows from start to stop with `GroomingFlag = 1`.
+    - [x] Assign a unique positive `EventID` for each event.
+- [x] **Unit Tests for Timeline Generation**
+  - [x] Verify timeline DataFrame correctness given sample input frames.
 
 ---
 
 ## 5. Event List Generation
-- [ ] **Event List Function**
-  - [ ] Implement a function to generate an event list from paired events.
-  - [ ] Create a DataFrame (or CSV) with columns:
+- [x] **Event List Function**
+  - [x] Implement a function to generate an event list from paired events.
+  - [x] Create a DataFrame (or CSV) with columns:
     - `EventID`
     - `StartFrame`
     - `StopFrame`
-- [ ] **Unit Tests for Event List**
-  - [ ] Verify that the event list matches expected events for given inputs.
+- [x] **Unit Tests for Event List**
+  - [x] Verify that the event list matches expected events for given inputs.
 
 ---
 
 ## 6. Visualization Functions
-- [ ] **Timeline Plot Function**
-  - [ ] Create a function to generate a timeline plot as a PNG.
-  - [ ] The plot should color-code grooming regions along frames 1 to N.
-- [ ] **Box Plot Function**
-  - [ ] Create a function to generate a box plot (PNG) showing the distribution of grooming event durations.
-  - [ ] Calculate durations as `StopFrame - StartFrame + 1`.
-- [ ] **Unit Tests for Visualizations**
-  - [ ] Check that the PNG files are generated.
-  - [ ] Optionally verify file non-emptiness or basic plot properties.
+- [x] **Timeline Plot Function**
+  - [x] Create a function to generate a timeline plot as a PNG.
+  - [x] The plot should color-code grooming regions along frames 1 to N.
+- [x] **Box Plot Function**
+  - [x] Create a function to generate a box plot (PNG) showing the distribution of grooming event durations.
+  - [x] Calculate durations as `StopFrame - StartFrame + 1`.
+- [x] **Unit Tests for Visualizations**
+  - [x] Check that the PNG files are generated.
+  - [x] Optionally verify file non-emptiness or basic plot properties.
 
 ---
 
 ## 7. Error Logging & Batch Processing
-- [ ] **Error Logging Function**
-  - [ ] Implement a function to log errors in an `errorLog.csv` file.
-  - [ ] Log details: file name, error type, timestamp, and problematic frame (if applicable).
-- [ ] **Batch Processing Function**
-  - [ ] Create a function to process all CSV files in a specified input directory.
-  - [ ] For each file:
-    - [ ] Process input CSV and validate.
-    - [ ] If errors are found, log the error and skip processing.
-    - [ ] If valid, generate outputs:
+- [x] **Error Logging Function**
+  - [x] Implement a function to log errors in an `errorLog.csv` file.
+  - [x] Log details: file name, error type, timestamp, and problematic frame (if applicable).
+- [x] **Batch Processing Function**
+  - [x] Create a function to process all CSV files in a specified input directory.
+  - [x] For each file:
+    - [x] Process input CSV and validate.
+    - [x] If errors are found, log the error and skip processing.
+    - [x] If valid, generate outputs:
       - Timeline Table CSV
       - Event List CSV
       - Timeline Plot PNG
       - Box Plot PNG
-  - [ ] Track per-file metrics:
+  - [x] Track per-file metrics:
     - Number of events
     - Total grooming duration
     - Average/median event duration
     - Percentage of grooming frames
-  - [ ] Aggregate overall metrics:
+  - [x] Aggregate overall metrics:
     - Total files processed
     - Number of successfully processed files
     - Number of faulty files
-- [ ] **Unit/Integration Tests for Batch Processing**
-  - [ ] Simulate a directory with a mix of valid and faulty CSV files.
-  - [ ] Verify outputs and error log entries.
+- [x] **Unit/Integration Tests for Batch Processing**
+  - [x] Simulate a directory with a mix of valid and faulty CSV files.
+  - [x] Verify outputs and error log entries.
 
 ---
 
 ## 8. Consolidated Summary Report
-- [ ] **Summary Report Function**
-  - [ ] Generate a consolidated CSV report aggregating per-file and overall metrics.
-  - [ ] Include file-specific metrics and overall statistics.
-- [ ] **Unit Tests for Summary Report**
-  - [ ] Validate that the report accurately reflects the metrics from processed files.
+- [x] **Summary Report Function**
+  - [x] Generate a consolidated CSV report aggregating per-file and overall metrics.
+  - [x] Include file-specific metrics and overall statistics.
+- [x] **Unit Tests for Summary Report**
+  - [x] Validate that the report accurately reflects the metrics from processed files.
 
 ---
 
-## 9. Final Integration & Main Function Wiring
-- [ ] **Main Function**
-  - [ ] Wire together CLI parsing, file processing, output generation, and error logging.
-  - [ ] Distinguish between single file and directory processing.
-  - [ ] Call appropriate functions for each processing step.
-  - [ ] Print status messages for each file processed.
-  - [ ] Print or output the final consolidated summary report.
-- [ ] **Integration Testing**
-  - [ ] Write an integration test that simulates a full run with sample inputs.
-  - [ ] Ensure that all modules work together without orphaned code.
+## 9. Final Integration & Main Function Wiring (Redundant)
+- [x] **Main Function**
+  - [x] Wire together CLI parsing, file processing, output generation, and error logging.
+  - [x] Distinguish between single file and directory processing.
+  - [x] Call appropriate functions for each processing step.
+  - [x] Print status messages for each file processed.
+  - [x] Print or output the final consolidated summary report.
+- [x] **Integration Testing**
+  - [x] Write an integration test that simulates a full run with sample inputs.
+  - [x] Ensure that all modules work together without orphaned code.
 
 ---
 
-## 10. Documentation & Final Checks
-- [ ] **Inline Documentation**
-  - [ ] Ensure all functions have proper docstrings.
-  - [ ] Add inline comments explaining complex sections.
-- [ ] **User Documentation**
-  - [ ] Update README.md with installation, usage instructions, and example commands.
-- [ ] **Code Cleanup**
-  - [ ] Remove any orphaned or dead code.
-  - [ ] Check for PEP8 compliance and style consistency.
-- [ ] **Final Testing**
-  - [ ] Run the complete test suite using PyTest.
-  - [ ] Manually test CLI execution with various inputs.
-  - [ ] Verify that error handling and logging work as expected.
-
----
-
-This checklist should serve as a comprehensive guide for completing the project step-by-step. Use it to track your progress and ensure all aspects of the project are implemented and tested.
+## 10. Documentation & Final Checks (Redundant)
+- [x] **Inline Documentation**
+  - [x] Ensure all functions have proper docstrings.
+  - [x] Add inline comments explaining complex sections.
+- [x] **User Documentation**
+  - [x] Update README.md with installation, usage instructions, and example commands.
+- [x] **Code Cleanup**
+  - [x] Remove any orphaned or dead code.
+  - [x] Check for PEP8 compliance and style consistency.
+- [x] **Final Testing**
+  - [x] Run the complete test suite using PyTest.
+  - [x] Manually test CLI execution with various inputs.
+  - [x] Verify that error handling and logging work as expected.
