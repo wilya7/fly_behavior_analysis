@@ -235,3 +235,65 @@ def test_timeline_from_csv_file(valid_csv):
     # Second event: frames 200-250
     assert all(timeline.loc[199:249, 'GroomingFlag'] == 1)
     assert all(timeline.loc[199:249, 'EventID'] == 2)
+
+def test_generate_event_list_basic(sample_frames):
+    """Test basic functionality of generate_event_list with valid input."""
+    # Sample frames is [100, 200, 300, 400] representing two events
+    event_list = generate_event_list(sample_frames)
+    
+    # Verify event list has correct shape and columns
+    assert len(event_list) == 2  # Should have 2 events
+    assert all(col in event_list.columns for col in ['EventID', 'StartFrame', 'StopFrame'])
+    
+    # Verify first event
+    assert event_list.loc[0, 'EventID'] == 1
+    assert event_list.loc[0, 'StartFrame'] == 100
+    assert event_list.loc[0, 'StopFrame'] == 200
+    
+    # Verify second event
+    assert event_list.loc[1, 'EventID'] == 2
+    assert event_list.loc[1, 'StartFrame'] == 300
+    assert event_list.loc[1, 'StopFrame'] == 400
+
+def test_generate_event_list_invalid_pair(invalid_frame_pair):
+    """Test generate_event_list with invalid frame pair (start > stop)."""
+    # Should raise ValueError for invalid pair
+    with pytest.raises(ValueError) as excinfo:
+        generate_event_list(invalid_frame_pair)
+    
+    # Check that the error message mentions the invalid pair
+    assert "start (200) > stop (100)" in str(excinfo.value)
+
+def test_generate_event_list_odd_entries():
+    """Test generate_event_list with odd number of entries."""
+    odd_frames = pd.Series([100, 200, 300])  # Odd number of entries
+    
+    # Should raise ValueError for odd number of entries
+    with pytest.raises(ValueError) as excinfo:
+        generate_event_list(odd_frames)
+    
+    # Check that the error message mentions even number of entries
+    assert "even number" in str(excinfo.value).lower()
+
+def test_event_list_from_csv_file(valid_csv):
+    """Test end-to-end processing from CSV file to event list generation."""
+    # Process the CSV file
+    frames_df = process_csv(valid_csv)
+    assert frames_df is not None
+    
+    # Generate event list from the processed frames
+    event_list = generate_event_list(frames_df['Frame'])
+    
+    # Verify the event list has expected structure
+    assert len(event_list) == 2  # Should have 2 events
+    assert all(col in event_list.columns for col in ['EventID', 'StartFrame', 'StopFrame'])
+    
+    # Verify first event
+    assert event_list.loc[0, 'EventID'] == 1
+    assert event_list.loc[0, 'StartFrame'] == 100
+    assert event_list.loc[0, 'StopFrame'] == 150
+    
+    # Verify second event
+    assert event_list.loc[1, 'EventID'] == 2
+    assert event_list.loc[1, 'StartFrame'] == 200
+    assert event_list.loc[1, 'StopFrame'] == 250
