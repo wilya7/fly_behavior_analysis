@@ -590,6 +590,105 @@ def generate_box_plot(event_list_df: pd.DataFrame, output_path: Path) -> None:
     
     logger.info(f"Saved box plot to {output_path}")
 
+def process_input(input_path: Path, output_path: Path, total_frames: int) -> Dict[str, Any]:
+    """
+    Process input file(s) and generate outputs.
+    
+    This function handles both single files and directories:
+    - If input_path is a file, it processes that file only
+    - If input_path is a directory, it processes all CSV files in that directory
+    
+    Args:
+        input_path: Path to the input file or directory
+        output_path: Path to the directory where outputs will be saved
+        total_frames: Total number of frames to consider
+        
+    Returns:
+        Dictionary containing summary statistics
+    """
+    # Create output directory - assumes it doesn't exist (checked by validate_args)
+    output_path.mkdir(parents=True, exist_ok=False)
+    
+    # Initialize tracking variables
+    error_logs = []
+    file_summaries = []
+    total_files = 0
+    successful_files = 0
+    all_event_durations = []  # Collect all event durations for overall stats
+    
+    # Determine files to process
+    if input_path.is_file():
+        files_to_process = [input_path]
+    else:
+        files_to_process = list(input_path.glob('*.csv'))
+    
+    # Process each file
+    for csv_file in files_to_process:
+        total_files += 1
+        logger.info(f"Processing file: {csv_file.name}")
+        
+        # Initialize error log for this file
+        error_log = {}
+        
+        # Process and validate the CSV file
+        frames_df = process_csv(csv_file, error_log)
+        
+        if frames_df is None:
+            # If processing failed, add the error log and continue to next file
+            error_logs.append(error_log)
+            logger.error(f"Failed to process {csv_file.name}: {error_log['details']}")
+            continue
+        
+        try:
+            # Extract filename without extension
+            filename = csv_file.stem
+            
+            # Generate timeline
+            timeline_df = generate_timeline(frames_df['Frame'], total_frames)
+            
+            # Generate event list
+            event_list_df = generate_event_list(frames_df['Frame'])
+            
+            # Save timeline to CSV
+            timeline_file = output_path / f"{filename}_timeline.csv"
+            timeline_df.to_csv(timeline_file, index=False)
+            logger.info(f"Saved timeline to {timeline_file}")
+            
+            # Save event list to CSV
+            events_file = output_path / f"{filename}_events.csv"
+            event_list_df.to_csv(events_file, index=False)
+            logger.info(f"Saved event list to {events_file}")
+            
+            # Generate and save timeline plot
+            timeline_plot_file = output_path / f"{filename}_timeline.png"
+            generate_timeline_plot(timeline_df, timeline_plot_file)
+            
+            # Generate and save box plot
+            box_plot_file = output_path / f"{filename}_boxplot.png"
+            generate_box_plot(event_list_df, box_plot_file)
+            
+            # Calculate summary statistics for this file
+            file_summary, event_durations = calculate_file_summary(
+                filename, timeline_df, event_list_df, total_frames
+            )
+            file_summaries.append(file_summary)
+            all_event_durations.extend(event_durations)
+            
+            successful_files += 1
+            logger.info(f"Successfully processed {csv_file.name}")
+            
+        except Exception as e:
+            # Log any errors that occur during processing
+            error_log = {
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'filename': csv_file.name,
+                'error_type': 'Processing Error',
+                'details': str(e),
+                'frame': None
+            }
+            error_logs.append(error_log)
+            logger.error(f"Error processing {csv_file.name}: {str(e)}")
+    
 def main():
     """
     Main function that orchestrates the data processing pipeline.
