@@ -305,6 +305,102 @@ def generate_event_list(frames: pd.Series) -> pd.DataFrame:
     # Create and return the DataFrame
     return pd.DataFrame(events)
 
+def calculate_file_summary(filename: str, timeline_df: pd.DataFrame, event_list_df: pd.DataFrame, total_frames: int) -> Tuple[Dict[str, Any], List[int]]:
+    """
+    Calculate summary statistics for a processed file.
+    
+    Args:
+        filename: Name of the processed file
+        timeline_df: Timeline DataFrame for the file
+        event_list_df: Event list DataFrame for the file
+        total_frames: Total number of frames considered
+        
+    Returns:
+        Tuple containing:
+            - Dictionary with summary statistics for the file
+            - List of event durations for calculating overall statistics
+    """
+    # Calculate event durations
+    event_durations = [(row['StopFrame'] - row['StartFrame'] + 1) for _, row in event_list_df.iterrows()]
+    
+    # Count of grooming events
+    num_events = len(event_list_df)
+    
+    # Total grooming duration (in frames)
+    total_grooming_frames = timeline_df['GroomingFlag'].sum()
+    
+    # Average event duration
+    avg_event_duration = np.mean(event_durations) if event_durations else 0
+    
+    # Median event duration
+    median_event_duration = np.median(event_durations) if event_durations else 0
+    
+    # Standard deviation of event durations
+    std_event_duration = np.std(event_durations) if event_durations else 0
+    
+    # Percentage of grooming frames relative to total
+    grooming_percentage = (total_grooming_frames / total_frames) * 100
+    
+    # Create summary dictionary
+    summary = {
+        'filename': filename,
+        'num_events': num_events,
+        'total_grooming_frames': int(total_grooming_frames),
+        'avg_event_duration': float(avg_event_duration),
+        'median_event_duration': float(median_event_duration),
+        'std_event_duration': float(std_event_duration),
+        'grooming_percentage': float(grooming_percentage)
+    }
+    
+    return summary, event_durations
+
+def save_summary_report(summary_report: Dict[str, Any], output_dir: Path, total_frames: int) -> None:
+    """
+    Save the consolidated summary report as a CSV file.
+    
+    Args:
+        summary_report: Dictionary containing summary statistics
+        output_dir: Directory to save the report
+        total_frames: Total number of frames considered per file
+    """
+    # Extract file summaries
+    file_summaries = summary_report['file_summaries']
+    
+    if not file_summaries:
+        logger.warning("No files were successfully processed. Cannot generate summary report.")
+        return
+    
+    # Create DataFrame from file summaries
+    summary_df = pd.DataFrame(file_summaries)
+    
+    # Calculate overall statistics
+    all_event_durations = summary_report['all_event_durations']
+    successful_files = summary_report['successful_files']
+    total_events = summary_df['num_events'].sum()
+    total_grooming_frames = summary_df['total_grooming_frames'].sum()
+    
+    # Calculate overall grooming percentage across all files
+    overall_grooming_percentage = (total_grooming_frames / (successful_files * total_frames)) * 100 if successful_files > 0 else 0
+    
+    # Create overall summary row
+    overall_summary = {
+        'filename': 'OVERALL',
+        'num_events': total_events,
+        'total_grooming_frames': int(total_grooming_frames),
+        'avg_event_duration': float(np.mean(all_event_durations)) if all_event_durations else 0,
+        'median_event_duration': float(np.median(all_event_durations)) if all_event_durations else 0,
+        'std_event_duration': float(np.std(all_event_durations)) if all_event_durations else 0,
+        'grooming_percentage': float(overall_grooming_percentage)
+    }
+    
+    # Append overall summary to the DataFrame
+    summary_df = pd.concat([summary_df, pd.DataFrame([overall_summary])], ignore_index=True)
+    
+    # Save summary report
+    summary_file = output_dir / "summary_report.csv"
+    summary_df.to_csv(summary_file, index=False)
+    logger.info(f"Saved consolidated summary report to {summary_file}")
+    
 def main():
     """
     Main function that orchestrates the data processing pipeline.
