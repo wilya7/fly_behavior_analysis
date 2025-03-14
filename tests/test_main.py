@@ -297,3 +297,38 @@ def test_event_list_from_csv_file(valid_csv):
     assert event_list.loc[1, 'EventID'] == 2
     assert event_list.loc[1, 'StartFrame'] == 200
     assert event_list.loc[1, 'StopFrame'] == 250
+
+# Helper function for batch processing tests
+def create_test_file(path, df):
+    """Helper function to create test CSV files."""
+    df.to_csv(path, index=False)
+
+def test_calculate_file_summary():
+    """Test the calculation of file summary statistics."""
+    # Create sample data
+    timeline_df = pd.DataFrame({
+        'Frame': range(1, 101),
+        'GroomingFlag': [1] * 30 + [0] * 40 + [1] * 20 + [0] * 10,
+        'EventID': [1] * 30 + [0] * 40 + [2] * 20 + [0] * 10
+    })
+    
+    event_list_df = pd.DataFrame({
+        'EventID': [1, 2],
+        'StartFrame': [1, 71],
+        'StopFrame': [30, 90]
+    })
+    
+    total_frames = 100
+    filename = "test_file"
+    
+    # Calculate summary
+    summary, event_durations = calculate_file_summary(filename, timeline_df, event_list_df, total_frames)
+    
+    # Verify summary results
+    assert summary['filename'] == filename
+    assert summary['num_events'] == 2
+    assert summary['total_grooming_frames'] == 50  # 30 + 20
+    assert summary['grooming_percentage'] == 50.0  # 50/100 * 100
+    
+    # Verify event durations
+    assert event_durations == [30, 20]  # (30-1+1), (90-71+1)
