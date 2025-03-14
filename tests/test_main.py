@@ -425,3 +425,87 @@ def test_process_single_file(tmp_path):
     
     # Verify no error log was created (since there were no errors)
     assert not (output_dir / "errorLog.csv").exists()
+
+def test_generate_timeline_plot(tmp_path):
+    """Test timeline plot generation."""
+    # Create sample timeline data
+    timeline_df = pd.DataFrame({
+        'Frame': range(1, 101),
+        'GroomingFlag': [0] * 20 + [1] * 30 + [0] * 20 + [1] * 20 + [0] * 10,
+        'EventID': [0] * 20 + [1] * 30 + [0] * 20 + [2] * 20 + [0] * 10
+    })
+    
+    # Define output path
+    output_path = tmp_path / "timeline_test.png"
+    
+    # Generate the plot
+    generate_timeline_plot(timeline_df, output_path)
+    
+    # Verify the plot file was created
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0  # File should not be empty
+
+def test_generate_timeline_plot_empty_input():
+    """Test timeline plot generation with empty input."""
+    # Create empty DataFrame
+    empty_df = pd.DataFrame(columns=['Frame', 'GroomingFlag', 'EventID'])
+    
+    # Test with empty DataFrame
+    with pytest.raises(ValueError) as excinfo:
+        generate_timeline_plot(empty_df, Path("dummy.png"))
+    
+    # Check error message
+    assert "empty" in str(excinfo.value).lower()
+
+def test_generate_box_plot(tmp_path):
+    """Test box plot generation."""
+    # Create sample event list data
+    event_list_df = pd.DataFrame({
+        'EventID': [1, 2, 3, 4, 5],
+        'StartFrame': [10, 50, 100, 200, 300],
+        'StopFrame': [40, 70, 150, 220, 350]
+    })
+    
+    # Define output path
+    output_path = tmp_path / "boxplot_test.png"
+    
+    # Generate the plot
+    generate_box_plot(event_list_df, output_path)
+    
+    # Verify the plot file was created
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0  # File should not be empty
+
+def test_generate_box_plot_empty_input():
+    """Test box plot generation with empty input."""
+    # Create empty DataFrame
+    empty_df = pd.DataFrame(columns=['EventID', 'StartFrame', 'StopFrame'])
+    
+    # Test with empty DataFrame
+    with pytest.raises(ValueError) as excinfo:
+        generate_box_plot(empty_df, Path("dummy.png"))
+    
+    # Check error message
+    assert "empty" in str(excinfo.value).lower()
+
+def test_visualization_integration(valid_csv, tmp_path):
+    """Test integration of visualization functions with processing pipeline."""
+    # Process the CSV file
+    frames_df = process_csv(valid_csv)
+    assert frames_df is not None
+    
+    # Generate timeline and event list
+    total_frames = 500
+    timeline_df = generate_timeline(frames_df['Frame'], total_frames)
+    event_list_df = generate_event_list(frames_df['Frame'])
+    
+    # Generate visualizations
+    timeline_plot_path = tmp_path / "timeline_plot.png"
+    box_plot_path = tmp_path / "box_plot.png"
+    
+    generate_timeline_plot(timeline_df, timeline_plot_path)
+    generate_box_plot(event_list_df, box_plot_path)
+    
+    # Verify output files
+    assert timeline_plot_path.exists()
+    assert box_plot_path.exists()
