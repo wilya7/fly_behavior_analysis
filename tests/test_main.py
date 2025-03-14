@@ -332,3 +332,96 @@ def test_calculate_file_summary():
     
     # Verify event durations
     assert event_durations == [30, 20]  # (30-1+1), (90-71+1)
+
+def test_process_input(tmp_path):
+    """Test batch processing of multiple files."""
+    # Create test directories
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    output_dir = tmp_path / "output"
+    
+    # Create valid test files
+    valid_file1 = input_dir / "valid1.csv"
+    create_test_file(valid_file1, pd.DataFrame({
+        'Frame': [100, 150, 200, 250]
+    }))
+    
+    valid_file2 = input_dir / "valid2.csv"
+    create_test_file(valid_file2, pd.DataFrame({
+        'Frame': [50, 75, 300, 400]
+    }))
+    
+    # Create invalid test files
+    invalid_file1 = input_dir / "invalid1.csv"
+    create_test_file(invalid_file1, pd.DataFrame({
+        'Frame': [100, 150, 200]  # Odd number of entries
+    }))
+    
+    invalid_file2 = input_dir / "invalid2.csv"
+    create_test_file(invalid_file2, pd.DataFrame({
+        'NotFrame': [100, 150, 200, 250]  # Missing Frame column
+    }))
+    
+    # Process the directory
+    summary = process_input(input_dir, output_dir, 500)
+    
+    # Verify summary statistics
+    assert summary['total_files'] == 4
+    assert summary['successful_files'] == 2
+    assert summary['faulty_files'] == 2
+    
+    # Verify output files exist for valid inputs
+    assert (output_dir / "valid1_timeline.csv").exists()
+    assert (output_dir / "valid1_events.csv").exists()
+    assert (output_dir / "valid2_timeline.csv").exists()
+    assert (output_dir / "valid2_events.csv").exists()
+    
+    # Verify visualization files exist
+    assert (output_dir / "valid1_timeline.png").exists()
+    assert (output_dir / "valid1_boxplot.png").exists()
+    assert (output_dir / "valid2_timeline.png").exists()
+    assert (output_dir / "valid2_boxplot.png").exists()
+    
+    # Verify summary report and error log
+    assert (output_dir / "summary_report.csv").exists()
+    assert (output_dir / "errorLog.csv").exists()
+    
+    # Check error log content
+    error_log = pd.read_csv(output_dir / "errorLog.csv")
+    assert len(error_log) == 2
+    
+    # Check that both invalid files are in the error log
+    invalid_files_in_log = set(error_log['filename'])
+    assert "invalid1.csv" in invalid_files_in_log
+    assert "invalid2.csv" in invalid_files_in_log
+
+def test_process_single_file(tmp_path):
+    """Test processing of a single file."""
+    # Create test directories
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    output_dir = tmp_path / "output"
+    
+    # Create a valid test file
+    valid_file = input_dir / "valid.csv"
+    create_test_file(valid_file, pd.DataFrame({
+        'Frame': [100, 150, 200, 250]
+    }))
+    
+    # Process the single file
+    summary = process_input(valid_file, output_dir, 500)
+    
+    # Verify summary statistics
+    assert summary['total_files'] == 1
+    assert summary['successful_files'] == 1
+    assert summary['faulty_files'] == 0
+    
+    # Verify output files exist
+    assert (output_dir / "valid_timeline.csv").exists()
+    assert (output_dir / "valid_events.csv").exists()
+    assert (output_dir / "valid_timeline.png").exists()
+    assert (output_dir / "valid_boxplot.png").exists()
+    assert (output_dir / "summary_report.csv").exists()
+    
+    # Verify no error log was created (since there were no errors)
+    assert not (output_dir / "errorLog.csv").exists()
