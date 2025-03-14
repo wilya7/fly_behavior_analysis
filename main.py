@@ -689,6 +689,27 @@ def process_input(input_path: Path, output_path: Path, total_frames: int) -> Dic
             error_logs.append(error_log)
             logger.error(f"Error processing {csv_file.name}: {str(e)}")
     
+    # Generate consolidated summary report
+    summary_report = {
+        'total_files': total_files,
+        'successful_files': successful_files,
+        'faulty_files': total_files - successful_files,
+        'file_summaries': file_summaries,
+        'all_event_durations': all_event_durations
+    }
+    
+    # Save error logs if any
+    if error_logs:
+        error_log_df = pd.DataFrame(error_logs)
+        error_log_file = output_path / "errorLog.csv"
+        error_log_df.to_csv(error_log_file, index=False)
+        logger.info(f"Saved error log to {error_log_file}")
+    
+    # Save consolidated summary report
+    save_summary_report(summary_report, output_path, total_frames)
+    
+    return summary_report
+
 def main():
     """
     Main function that orchestrates the data processing pipeline.
