@@ -727,19 +727,27 @@ def main():
     if not validate_args(args):
         sys.exit(1)
     
-    # Create output directory
+    input_path = Path(args.input)
     output_path = Path(args.output)
-    output_path.mkdir(parents=True, exist_ok=False)
     
     print(f"Starting processing...")
     print(f"Input: {args.input}")
     print(f"Output: {args.output}")
     print(f"Total frames: {args.total_frames}")
     
-    # TODO: Implement the rest of the processing pipeline
-    
-    print("Processing complete.")
-
+    try:
+        # Process the input (file or directory)
+        summary = process_input(input_path, output_path, args.total_frames)
+        
+        # Print processing summary
+        print(f"\nProcessing complete.")
+        print(f"Total files processed: {summary['total_files']}")
+        print(f"Successfully processed: {summary['successful_files']}")
+        print(f"Failed to process: {summary['faulty_files']}")
+        
+    except Exception as e:
+        print(f"Error during processing: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
