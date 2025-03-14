@@ -38,8 +38,8 @@ def valid_csv():
         })
         df.to_csv(temp.name, index=False)
         yield temp.name
-    # Clean up
-    os.unlink(temp.name)
+        # Clean up
+        os.unlink(temp.name)
 
 @pytest.fixture
 def no_frame_column_csv():
