@@ -25,7 +25,7 @@ This checklist outlines all the tasks required to complete the project. Each ite
 ---
 
 ## 2. CLI Interface & Argument Parsing
-- [ ] **CLI Setup**
+- [x] **CLI Setup**
   - [x] Use `argparse` to implement command-line argument parsing.
   - [x] Define required arguments:
     - `--input`: Input file or directory.
